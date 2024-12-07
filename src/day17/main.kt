@@ -1,9 +1,9 @@
-package day09
+package day17
 
 import readInput
 import kotlin.system.measureNanoTime
 
-private const val FOLDER = "day09"
+private const val FOLDER = "day17"
 
 fun main() {
 
