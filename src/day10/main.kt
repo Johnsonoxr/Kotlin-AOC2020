@@ -1,6 +1,5 @@
 package day10
 
-import println
 import readInput
 import kotlin.system.measureNanoTime
 
@@ -41,7 +40,7 @@ fun main() {
             .windowed(2)
             .map { (jolt1, jolt2) -> jolt2 - jolt1 }
 
-        return countArrangements(joltOffsets).also { it.println() }
+        return countArrangements(joltOffsets)
     }
 
     check(part1(readInput("$FOLDER/test")) == 220)
