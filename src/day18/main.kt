@@ -1,6 +1,5 @@
 package day18
 
-import println
 import readInput
 import kotlin.system.measureNanoTime
 
@@ -29,19 +28,24 @@ fun main() {
     fun part2(input: List<String>): Long {
 
         fun runMath(mathExpression: String): String {
-            mathExpression.println()
             mathExpression.toLongOrNull()?.let { return mathExpression }
-            val exp = Regex("\\(\\d+ [+*] \\d+\\)").find(mathExpression)
-                ?: Regex("\\d+ \\+ \\d+").find(mathExpression)
-                ?: Regex("\\d+ \\* \\d+").find(mathExpression)
-                ?: throw IllegalArgumentException("math expression analyze failed. $mathExpression")
-            val (a, op, b) = exp.value.trim('(', ')').split(" ")
+
+            var mathExpWithoutBrackets = mathExpression
+            while (true) {
+                val brackets = Regex("\\([\\d+* ]+\\)").find(mathExpWithoutBrackets) ?: break
+                mathExpWithoutBrackets = mathExpWithoutBrackets.replaceRange(brackets.range, runMath(brackets.value.drop(1).dropLast(1)))
+            }
+
+            val exp = Regex("\\d+ \\+ \\d+").find(mathExpWithoutBrackets)
+                ?: Regex("\\d+ \\* \\d+").find(mathExpWithoutBrackets)
+                ?: throw IllegalArgumentException("math expression analyze failed. $mathExpWithoutBrackets")
+            val (a, op, b) = exp.value.split(" ")
             val aOpB = when (op) {
                 "+" -> a.toLong() + b.toLong()
                 "*" -> a.toLong() * b.toLong()
                 else -> throw IllegalArgumentException("Unexpected operator $op")
             }
-            return runMath(mathExpression.replaceRange(exp.range, aOpB.toString()))
+            return runMath(mathExpWithoutBrackets.replaceRange(exp.range, aOpB.toString()))
         }
 
         return input.sumOf { line -> runMath(line).toLong() }
