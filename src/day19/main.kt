@@ -1,6 +1,5 @@
 package day19
 
-import println
 import readInput
 import kotlin.system.measureNanoTime
 
@@ -27,28 +26,50 @@ fun main() {
 
         val ruleMap = rules.associateBy { it.id }
 
-        fun checkMatch(message: String, rule: Rule): String {
-            if (rule.node != null) return if (message.first() == rule.node) message.drop(1) else message
-            val unmatched = rule.branches.mapNotNull { ruleIds ->
+        fun checkMatch(message: String, rule: Rule, depth: Int): String? {
+            if (rule.node != null) return if (message.first() == rule.node) message.drop(1) else null
+            return rule.branches.map { ruleIds ->
                 var messageLeft = message
                 for (ruleId in ruleIds) {
                     val branchRule = ruleMap[ruleId] ?: throw IllegalArgumentException("???")
-                    messageLeft = checkMatch(messageLeft, branchRule).takeIf { it != messageLeft } ?: return@mapNotNull null
+                    messageLeft = checkMatch(messageLeft, branchRule, depth + 1) ?: return@map null
                 }
-                return@mapNotNull messageLeft
-            }
-            return unmatched.minByOrNull { it.length } ?: message
+                return@map messageLeft
+            }.filterNotNull().minByOrNull { it.length }
         }
 
-        return messages.filter { checkMatch(it, rules[0]).isEmpty() }.also { it.forEach { it.println() } }.count()
+        return messages.count { checkMatch(it, ruleMap[0]!!, 0)?.length == 0 }
     }
 
     fun part2(input: List<String>): Int {
-        return 1
+        val (rules, messages) = parseRulesAndMessages(input)
+
+        val ruleMap = rules.associateBy { it.id }.toMutableMap()
+        ruleMap[8] = Rule(8, listOf(listOf(42), listOf(42, 8)), null)
+        ruleMap[11] = Rule(11, listOf(listOf(42, 31), listOf(42, 11, 31)), null)
+
+        fun checkMatchSizes(message: String, rule: Rule): List<Int> {
+            if (message.isEmpty()) return emptyList()
+            if (rule.node != null) return if (message.first() == rule.node) listOf(1) else emptyList()
+            return rule.branches.map { branchRuleIds ->
+                var matchedSizes = listOf(0)
+                val branchRulesLeft = branchRuleIds.map { ruleMap[it]!! }.toMutableList()
+                while (branchRulesLeft.isNotEmpty()) {
+                    val branchRule = branchRulesLeft.removeFirst()
+                    val ruleMatchedSizesList = matchedSizes.map { matchedSize ->
+                        checkMatchSizes(message.drop(matchedSize), branchRule)
+                    }
+                    matchedSizes = matchedSizes.zip(ruleMatchedSizesList).map { (s, sList) -> sList.map { it + s } }.flatten()
+                }
+                matchedSizes
+            }.flatten().distinct()
+        }
+
+        return messages.count { checkMatchSizes(it, ruleMap[0]!!).maxOrNull() == it.length }
     }
 
     check(part1(readInput("$FOLDER/test")) == 2)
-    check(part2(readInput("$FOLDER/test")) == 1)
+    check(part2(readInput("$FOLDER/test2")) == 12)
 
     val input = readInput("$FOLDER/input")
     val part1Result: Int
